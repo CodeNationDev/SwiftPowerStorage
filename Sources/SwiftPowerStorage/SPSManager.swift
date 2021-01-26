@@ -10,7 +10,7 @@ public struct ParameterItem {
     var value: String?
 }
 
-public class CoreDataManager: NSObject {
+public class SPSManager: NSObject {
 
     public lazy var persistentContainer: NSPersistentCloudKitContainer = {
         let modelURL = Bundle.module.url(forResource:"CoreModel", withExtension: "momd")
@@ -23,6 +23,7 @@ public class CoreDataManager: NSObject {
         })
         return container
     }()
+    
     
     // MARK: - Core Data Saving support
     
@@ -63,7 +64,10 @@ public class CoreDataManager: NSObject {
     }
     
     public func loadParameter<T:Codable>(forKey: String, type: T.Type) -> T? {
-        try? HelperManager.JSON.jsonDecode(loadParamCoreData(forKey: forKey)!, type: type)
+        if let param = loadParamCoreData(forKey: forKey) {
+            return try? HelperManager.JSON.jsonDecode(param, type: type)
+        }
+        return nil
     }
     
     private func saveParamCoreData(forKey: String, value: String) -> Bool {
@@ -109,5 +113,17 @@ public class CoreDataManager: NSObject {
                 print(error.localizedDescription)
             }
         return nil
+    }
+    
+    public func destroyPersistenStore() -> Bool {
+        do {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "UniversalEntity")
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            try persistentContainer.viewContext.execute(deleteRequest)
+            return true
+        } catch let error {
+            print(error.localizedDescription)
+            return false
+        }
     }
 }
