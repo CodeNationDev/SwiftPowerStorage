@@ -3,15 +3,12 @@ import Foundation
 import CoreData
 import SwiftMagicHelpers
 
+public let sharedSPSManager = SPSManager()
+
 open class PersistentContainer: NSPersistentCloudKitContainer {}
 
-public struct ParameterItem {
-    var key: String?
-    var value: String?
-}
-
-public class SPSManager: NSObject {
-
+open class SPSManager: NSObject {
+    
     public lazy var persistentContainer: NSPersistentCloudKitContainer = {
         let modelURL = Bundle.module.url(forResource:"CoreModel", withExtension: "momd")
         let model = NSManagedObjectModel(contentsOf: modelURL!)
@@ -40,49 +37,53 @@ public class SPSManager: NSObject {
     }
     
     //Function for save ANY object.
-    public func saveParameter<T: Codable>(forKey: String, object: T, completionHandler: ((Bool, T?)->(Void))? = nil) {
-        DispatchQueue.main.async {
-            do {
-                let encoded = try HelperManager.JSON.jsonEncode(object)
-                if let removed = self.removeParameter(forKey: forKey) {
-                    if(self.saveParamCoreData(forKey: forKey, value: encoded)) {
-                        if let completion = completionHandler { completion(true, try? HelperManager.JSON.jsonDecode(removed, type: type(of: object))) }
-                    } else {
-                        if let completion = completionHandler { completion(false, nil) }
-                    }
+    public func saveParameter<T: Codable>(forKey: String, object: T, completionHandler: (( SPSResult<T>)->())? = nil) {
+        do {
+            let encoded = try HelperManager.JSON.jsonEncode(object)
+            if let _ = try self.removeParameter(forKey: forKey, type: type(of: object)) as? String {
+                if(self.saveParamCoreData(forKey: forKey, value: encoded)) {
+                    if let completion = completionHandler {
+                        completion(SPSResult.success(value: try! HelperManager.JSON.jsonDecode(encoded, type: type(of: object)))) }
                 } else {
-                    if(self.saveParamCoreData(forKey: forKey, value: encoded)) {
-                        if let completion = completionHandler { completion(true, nil) }
-                    } else {
-                        if let completion = completionHandler { completion(false, nil) }
-                    }
+                    if let completion = completionHandler { completion(SPSResult.failure) }
                 }
-            } catch let error {
-                print(error.localizedDescription)
+            } else {
+                if(self.saveParamCoreData(forKey: forKey, value: encoded)) {
+                    if let completion = completionHandler { completion(SPSResult.success(value: try! HelperManager.JSON.jsonDecode(encoded, type: type(of: object)))) }
+                } else {
+                    if let completion = completionHandler { completion(SPSResult.failure) }
+                }
             }
+        } catch let error {
+            print(error.localizedDescription)
         }
     }
     
-    public func loadParameter<T:Codable>(forKey: String, type: T.Type) -> T? {
+    public func loadParameter<T:Codable>(forKey: String, type: T.Type) throws -> T? {
         if let param = loadParamCoreData(forKey: forKey) {
-            return try? HelperManager.JSON.jsonDecode(param, type: type)
+            do {
+                return try HelperManager.JSON.jsonDecode(param, type: type)
+            } catch let error {
+                throw SPSError(message: error.localizedDescription, errorType: SPSError.ErrorType.typeError)
+            }
+            
         }
         return nil
     }
     
     private func saveParamCoreData(forKey: String, value: String) -> Bool {
-            let entity = NSEntityDescription.entity(forEntityName: "UniversalEntity", in: self.persistentContainer.viewContext)!
-            let shortcut = NSManagedObject(entity: entity, insertInto: self.persistentContainer.viewContext)
-            shortcut.setValue(forKey, forKey: "key")
-            shortcut.setValue(value, forKey: "value")
-            self.saveContext()
-            return true
+        let entity = NSEntityDescription.entity(forEntityName: "UniversalEntity", in: self.persistentContainer.viewContext)!
+        let shortcut = NSManagedObject(entity: entity, insertInto: self.persistentContainer.viewContext)
+        shortcut.setValue(forKey, forKey: "key")
+        shortcut.setValue(value, forKey: "value")
+        self.saveContext()
+        return true
     }
     
     private func loadParamCoreData(forKey: String? = nil) -> String? {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "UniversalEntity")
         if let forkey = forKey {
-            let predicate = NSPredicate(format: "key == %@", "\(forkey)")
+            let predicate = NSPredicate(format: "key == %@", forkey)
             fetchRequest.predicate = predicate
         }
         do {
@@ -96,22 +97,22 @@ public class SPSManager: NSObject {
         return nil
     }
     
-    public func removeParameter(forKey: String) -> String? {
-            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "UniversalEntity")
-            let predicate = NSPredicate(format: "key == %@", "\(forKey)")
-            fetchRequest.predicate = predicate
-            do {
-                let result = try self.persistentContainer.viewContext.fetch(fetchRequest)
-                if let first = result.first {
-                    let aux = first.value(forKey: "value") as? String
-                    self.persistentContainer.viewContext.delete(first)
-                    try self.persistentContainer.viewContext.save()
-                    return aux
-                }
-                
-            } catch let error {
-                print(error.localizedDescription)
+    public func removeParameter<T:Codable>(forKey: String, type: T.Type) throws -> T? {
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "UniversalEntity")
+        let predicate = NSPredicate(format: "key == %@", forKey)
+        fetchRequest.predicate = predicate
+        do {
+            let result = try self.persistentContainer.viewContext.fetch(fetchRequest)
+            if let first = result.first {
+                let aux = try loadParameter(forKey: forKey, type: type)
+                self.persistentContainer.viewContext.delete(first)
+                try self.persistentContainer.viewContext.save()
+                return aux
             }
+            
+        } catch let error {
+            throw SPSError(message: error.localizedDescription, errorType: SPSError.ErrorType.typeError)
+        }
         return nil
     }
     

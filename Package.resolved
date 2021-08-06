@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftMagicHelpers",
+        "repositoryURL": "https://github.com/CodeNationDev/SwiftMagicHelpers.git",
+        "state": {
+          "branch": "master",
+          "revision": "b6a2f8d4a39239bbcfb2708688a6af06d56ff416",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

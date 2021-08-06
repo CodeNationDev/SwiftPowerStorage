@@ -21,6 +21,10 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftPowerStorage",
-            dependencies: ["SwiftMagicHelpers"])
+            dependencies: ["SwiftMagicHelpers"]),
+        .testTarget(
+            name: "SwiftPowerStorageTests",
+            dependencies: ["SwiftPowerStorage", "SwiftMagicHelpers"])
+        
     ]
 )
