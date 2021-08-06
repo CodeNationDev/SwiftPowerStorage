@@ -1,4 +1,13 @@
-# SwiftPowerStorage
+```
+   _____         _  __ _   _____                       _____ _                             
+  / ____|       (_)/ _| | |  __ \                     / ____| |                            
+ | (_____      ___| |_| |_| |__) |____      _____ _ _| (___ | |_ ___  _ __ __ _  __ _  ___ 
+  \___ \ \ /\ / / |  _| __|  ___/ _ \ \ /\ / / _ \ '__\___ \| __/ _ \| '__/ _` |/ _` |/ _ \
+  ____) \ V  V /| | | | |_| |  | (_) \ V  V /  __/ |  ____) | || (_) | | | (_| | (_| |  __/
+ |_____/ \_/\_/ |_|_|  \__|_|   \___/ \_/\_/ \___|_| |_____/ \__\___/|_|  \__,_|\__, |\___|
+                                                                                 __/ |     
+                                                                                |___/      
+```
 > CoreData + Codable power for create a simply but powerful storage package.
 
 ## Installation
@@ -128,5 +137,10 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 [https://github.com/CodeNationDev/](https://github.com/CodeNationDev)
 
 ## Version History
+* 1.0.1
+  * Bugfixes in removeParameter returned value.
+  * Add unit tests.
+* 1.0.0
+  *  Refactor to SPSManager and bugfixes.
 * 0.0.1
-    * First implementation with main features.
+  * First implementation with main features.
